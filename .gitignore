@@ -26,3 +26,13 @@
 /GRTAGS
 /GTAGS
 /TAGS
+/build/
+src/dnsproxy
+
+nbproject/
+
+build\.sh
+
+clean\.sh
+
+src/proxy\.cfg
