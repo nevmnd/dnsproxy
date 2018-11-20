@@ -34,9 +34,16 @@ typedef struct {
 	LOCAL_DNS local;
 	REMOTE_DNS remote;
 } PROXY_ENGINE;
-
+#pragma (push, 1)
+struct fake_rrs {
+            uint16_t type : 0x01;
+            uint16_t classes : 0x01;
+            uint32_t ttl;
+            uint16_t rd_length : 0x04;
+            in_addr_t address;
+        } fake;
+#pragma (pop)
 static const int enable = 1;
-static int disable_cache = 0;
 static PRX_SETS *cfg;
 
 static void process_query(PROXY_ENGINE *engine)
@@ -45,18 +52,14 @@ static void process_query(PROXY_ENGINE *engine)
 	REMOTE_DNS *rdns;
 	DNS_HDR *hdr, *rhdr;
 	DNS_QDS *qds;
-	DNS_RRS *rrs;
-	DOMAIN_CACHE *dcache;
 	TRANSPORT_CACHE *tcache;
 	socklen_t addrlen;
 	struct sockaddr_in source;
 	char *pos, *head, *rear;
 	char *buffer, domain[PACKAGE_SIZE], rbuffer[PACKAGE_SIZE];
 	int size, dlen;
-	time_t current;
 	unsigned char qlen;
-	unsigned int ttl, ttl_tmp, i, blacklisted;
-	unsigned short index, q_len;
+        unsigned short q_len;
       
 	ldns = &engine->local;
 	rdns = &engine->remote;
@@ -166,18 +169,18 @@ static void process_response(char* buffer, int size)
 	char domain[PACKAGE_SIZE];
 	char *pos, *rear, *answer;
 	int badfmt, dlen, length;
+        uint32_t *p;
+        uint32_t fake_ip;
 	unsigned char qlen;
 	unsigned int ttl, ttl_tmp, blacklisted, i;
 	unsigned short index, an_count;
 
+ 
+
+
 	length = size;
 	hdr = (DNS_HDR*)buffer;
-        puts("RESPONSE DNS HEADER:");
-        for (i = 0; i < sizeof(DNS_HDR); i++){
-            printf("%X", hdr[i]);
-        };
-        printf("\n");
-	an_count = ntohs(hdr->an_count);
+ 	an_count = ntohs(hdr->an_count);
 	if(hdr->qr == 1 && hdr->tc == 0 && ntohs(hdr->qd_count) == 1 && an_count > 0) {
 		dlen = 0;
 		qds = NULL;
@@ -195,11 +198,6 @@ static void process_response(char* buffer, int size)
 			}
 			else {
 				qds = (DNS_QDS*) pos;
-        puts("RESPONSE DNS QDS:");
-        for (i = 0; i < sizeof(DNS_QDS); i++){
-            printf("%X", qds[i]);
-        };
-        printf("\n");
 				if(ntohs(qds->classes) != 0x01)
 					qds = NULL;
 				else
@@ -208,7 +206,6 @@ static void process_response(char* buffer, int size)
 			}
 		}
 		domain[dlen] = '\0';
-                
 //                fprintf(stdout, "Got domain: %s\n", domain);
                 blacklisted = 0;
                 for (i = 0; i < cfg->bl_size; ++i) {
@@ -229,11 +226,6 @@ static void process_response(char* buffer, int size)
 				if((unsigned char)*pos == 0xc0) {
 					pos += 2;
 					rrs = (DNS_RRS*) pos;
-        puts("RESPONSE DNS RRS:");
-        for (i = 0; i < sizeof(DNS_RRS); i++){
-            printf("%X", rrs[i]);
-        };
-        printf("\n");
 				}
 				else {
 					while(pos < rear) {
@@ -255,15 +247,40 @@ static void process_response(char* buffer, int size)
 					if(ttl_tmp < ttl)
 						ttl = ttl_tmp;
                                         if(blacklisted){
-                                            struct in_addr addr;
-                                            struct in_addr *p;
-//                                            p = &addr;
-                                            memcpy(&addr, &rrs->rd_data, 4);
-        puts("RESPONSE DNS R_DATA:");
-//        char *p;
-//        p = rrs+7;
-            printf("%X", addr);
+                puts("RRS:");
+        for (i = 0; i < sizeof(DNS_RRS); i++){
+            printf("%X", rrs[i]);
+        };
         printf("\n");
+//                                            struct fake_rrs *p = &fake;
+//                                            fake.ttl = 300;
+//                                            fake.address = inet_addr(cfg->dns_response);
+//                                            printf("type: %d\nclass: %d\nttl: %d\nlength: %d\nrd_data:\n",
+//                                                    ntohs(rrs->type),
+//                                                    ntohs(rrs->classes),
+//                                                    ntohl(rrs->ttl),
+//                                                    ntohs(rrs->rd_length)
+//                                                    );
+                                            p = &rrs->rd_data;
+                                            printf("%X\n", *p);
+                                            fake_ip = inet_addr(cfg->dns_response);
+                                            p = &fake_ip;                                            
+                                            printf("%X\n", ntohl(*p));
+                                            memcpy(&rrs->rd_data, p, sizeof(uint32_t));
+                                            puts("NEW RESPONSE RRS:");
+                                            for (i = 0; i < sizeof(DNS_RRS); i++){
+                                                printf("%X", rrs[i]);
+                                            };
+                                            printf("\n");
+                                            
+//                                            printf("TTL: %d\n", ntohl(rrs->ttl));
+//                                            printf("FAKE ADDRESS: %X\n", p->address);
+//                                            memcpy(&rrs->type, &fake, sizeof(struct fake_rrs));
+//                                            puts("NEW RESPONSE DNS RRS:");
+//                                            struct in_addr addr;
+//                                            p = &addr;
+//                                            memcpy(&addr, &rrs->rd_data, 4);
+//            printf("%X", addr);
                                         }
 					pos += sizeof(DNS_RRS) + ntohs(rrs->rd_length);
 				}
@@ -389,15 +406,10 @@ static int dnsproxy(int remote_tcp)
 	return 0;
 }
 
-int main(int argc, const char* argv[])
+int main()
 {
-	int opt, optind, i;
-	const char *optarg;
-	int use_daemon = 0;
 	int remote_tcp = 0;
 	int transport_timeout = 5;
-	const char *hosts_file = NULL;
-	unsigned short local_port = 53, remote_port = 53;
 
         cfg = readconfig(CONFIG_NAME);
         if(cfg == NULL)
