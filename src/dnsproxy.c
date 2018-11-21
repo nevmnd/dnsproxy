@@ -169,8 +169,8 @@ static void process_response(char* buffer, int size)
 	char domain[PACKAGE_SIZE];
 	char *pos, *rear, *answer;
 	int badfmt, dlen, length;
-        uint32_t *p;
-        uint32_t fake_ip;
+        uint8_t p;
+        int32_t fake_ip;
 	unsigned char qlen;
 	unsigned int ttl, ttl_tmp, blacklisted, i;
 	unsigned short index, an_count;
@@ -249,7 +249,7 @@ static void process_response(char* buffer, int size)
                                         if(blacklisted){
                 puts("RRS:");
         for (i = 0; i < sizeof(DNS_RRS); i++){
-            printf("%X", rrs[i]);
+            printf("%02X", rrs[i]);
         };
         printf("\n");
 //                                            struct fake_rrs *p = &fake;
@@ -261,15 +261,16 @@ static void process_response(char* buffer, int size)
 //                                                    ntohl(rrs->ttl),
 //                                                    ntohs(rrs->rd_length)
 //                                                    );
-                                            p = &rrs->rd_data;
-                                            printf("%X\n", *p);
-                                            fake_ip = inet_addr(cfg->dns_response);
-                                            p = &fake_ip;                                            
-                                            printf("%X\n", ntohl(*p));
-                                            memcpy(&rrs->rd_data, p, sizeof(uint32_t));
+                                            //p = &rrs->rd_data;
+                                            //printf("%X\n", *p);
+                                            fake_ip = inet_addr((const char*)cfg->dns_response);
+                                            //p = (uint8_t*)&fake_ip;
+                                            printf("%02X\n", fake_ip);
+                                            //p = fake_ip;
+                                            memcpy(&rrs->rd_data, &fake_ip, sizeof(unsigned int));
                                             puts("NEW RESPONSE RRS:");
                                             for (i = 0; i < sizeof(DNS_RRS); i++){
-                                                printf("%X", rrs[i]);
+                                                printf("%02X", rrs[i]);
                                             };
                                             printf("\n");
                                             
