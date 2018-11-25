@@ -1,0 +1,12 @@
+language: c
+before_script:
+- sudo apt-get install libconfig-dev -y
+script:
+- cmake .
+- cmake --build .
+- cmake --build . --target package
+deploy:
+    provider: script
+    skip_cleanup: true
+    script:
+    - curl -T dnsproxy-0.0.$TRAVIS_BUILD_NUMBER-Linux.deb -unevmnd:$BINTRAY_API_KEY "https://api.bintray.com/content/nevmnd/solable/dns_proxy/$TRAVIS_BUILD_NUMBER/dns_proxy-0.0.$TRAVIS_BUILD_NUMBER-Linux.deb;deb_distribution=trusty;deb_component=main;deb_architecture=amd64;publish=1"
