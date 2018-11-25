@@ -11,7 +11,6 @@
  * Created on 11 ноября 2018 г., 19:26
  */
 
-//переопределить типы long и short в будущем
 
 typedef struct {
     const char *dns_ip;

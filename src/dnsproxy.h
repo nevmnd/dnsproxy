@@ -8,17 +8,6 @@
  * found in the LICENSE file.
  */
 
-#ifdef _WIN32
-#define _WIN32_WINNT 0x0501
-#define _CRT_SECURE_NO_WARNINGS
-#define WIN32_LEAN_AND_MEAN
-#include <winsock2.h>
-#include <mswsock.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-#include <io.h>
-#define socklen_t int
-#else
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -36,7 +25,6 @@
 #define SOCKET int
 #define INVALID_SOCKET -1
 #define closesocket close
-#endif
 
 #include <time.h>
 #include <ctype.h>
@@ -86,33 +74,6 @@ typedef struct {
 #define MIN_TTL 10
 #define MAX_TTL (30 * 60)
 
-typedef struct {
-	struct rbnode rb_name;
-	union {
-		struct {
-			char *prefix;
-			int p_length;
-			int d_same;
-			struct list_head lh_name;
-		};
-		struct {
-			time_t expire;
-			struct rbnode rb_expire;
-		};
-	};
-	time_t timestamp;
-	char *domain;
-	int d_length;
-	char *answer;
-	unsigned short an_count;
-	unsigned short an_length;
-	char buffer[0];
-} DOMAIN_CACHE;
-
-void domain_cache_init(const char* file);
-DOMAIN_CACHE* domain_cache_search(char* domain);
-void domain_cache_append(char* domain, int d_length, unsigned int ttl, unsigned short an_count, unsigned short an_length, char *answer);
-void domain_cache_clean(time_t current);
 
 typedef struct {
 	struct rbnode rb_new;

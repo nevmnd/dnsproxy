@@ -34,15 +34,7 @@ typedef struct {
 	LOCAL_DNS local;
 	REMOTE_DNS remote;
 } PROXY_ENGINE;
-#pragma (push, 1)
-struct fake_rrs {
-            uint16_t type : 0x01;
-            uint16_t classes : 0x01;
-            uint32_t ttl;
-            uint16_t rd_length : 0x04;
-            in_addr_t address;
-        } fake;
-#pragma (pop)
+
 static const int enable = 1;
 static PRX_SETS *cfg;
 
@@ -109,7 +101,6 @@ static void process_query(PROXY_ENGINE *engine)
 			}
 		}
 		domain[dlen] = '\0';
-//                fprintf(stdout, "Requested domain: %s\n", domain);
 	}
 
 	if(rhdr->rcode == 0) {
@@ -121,34 +112,6 @@ static void process_query(PROXY_ENGINE *engine)
 			if(!rdns->tcp) {
 				if(sendto(rdns->sock, buffer, size, 0, (struct sockaddr*)&rdns->addr, sizeof(struct sockaddr_in)) != size)
 					rhdr->rcode = 2;
-			}
-			else {
-				if(rdns->sock == INVALID_SOCKET) {
-					rdns->head = 0;
-					rdns->rear = 0;
-					rdns->sock = socket(AF_INET, SOCK_STREAM, 0);
-					if(rdns->sock != INVALID_SOCKET) {
-						setsockopt(rdns->sock, IPPROTO_TCP, TCP_NODELAY, (void*)&enable, sizeof(enable));
-						if(connect(rdns->sock, (struct sockaddr*)&rdns->addr, sizeof(struct sockaddr_in)) != 0) {
-							closesocket(rdns->sock);
-							rdns->sock = INVALID_SOCKET;
-						}
-					}
-				}
-				if(rdns->sock == INVALID_SOCKET)
-					rhdr->rcode = 2;
-				else{
-					pos = ldns->buffer;
-					*(unsigned short*)pos = htons((unsigned short)size);
-					size += sizeof(unsigned short);
-					if(send(rdns->sock, ldns->buffer, size, 0) != size) {
-						rdns->head = 0;
-						rdns->rear = 0;
-						closesocket(rdns->sock);
-						rdns->sock = INVALID_SOCKET;
-						rhdr->rcode = 2;
-					}
-				}
 			}
 			if(rhdr->rcode != 0)
 				transport_cache_delete(tcache);
@@ -169,15 +132,11 @@ static void process_response(char* buffer, int size)
 	char domain[PACKAGE_SIZE];
 	char *pos, *rear, *answer;
 	int badfmt, dlen, length;
-        uint8_t p;
+        uint8_t *p;
         int32_t fake_ip;
 	unsigned char qlen;
-	unsigned int ttl, ttl_tmp, blacklisted, i;
+	unsigned short blacklisted, i;
 	unsigned short index, an_count;
-
- 
-
-
 	length = size;
 	hdr = (DNS_HDR*)buffer;
  	an_count = ntohs(hdr->an_count);
@@ -206,7 +165,7 @@ static void process_response(char* buffer, int size)
 			}
 		}
 		domain[dlen] = '\0';
-//                fprintf(stdout, "Got domain: %s\n", domain);
+
                 blacklisted = 0;
                 for (i = 0; i < cfg->bl_size; ++i) {
                     if(!strcmp((char *)cfg->blacklist[i], domain)){
@@ -214,10 +173,8 @@ static void process_response(char* buffer, int size)
                         break;
                     }
                 }
-//                printf("blacklisted: %u\n", blacklisted);
 
 		if(qds && ntohs(qds->type) == 0x01) {
-			ttl = MAX_TTL;
 			index = 0;
 			badfmt = 0;
 			answer = pos;
@@ -239,51 +196,27 @@ static void process_response(char* buffer, int size)
 							break;
 						}
 					}
-				}
+				}                                
 				if(rrs == NULL || ntohs(rrs->classes) != 0x01)
 					badfmt = 1;
 				else {
-					ttl_tmp = ntohl(rrs->ttl);
-					if(ttl_tmp < ttl)
-						ttl = ttl_tmp;
                                         if(blacklisted){
-                puts("RRS:");
-        for (i = 0; i < sizeof(DNS_RRS); i++){
-            printf("%02X", rrs[i]);
-        };
-        printf("\n");
-//                                            struct fake_rrs *p = &fake;
-//                                            fake.ttl = 300;
-//                                            fake.address = inet_addr(cfg->dns_response);
-//                                            printf("type: %d\nclass: %d\nttl: %d\nlength: %d\nrd_data:\n",
-//                                                    ntohs(rrs->type),
-//                                                    ntohs(rrs->classes),
-//                                                    ntohl(rrs->ttl),
-//                                                    ntohs(rrs->rd_length)
-//                                                    );
-                                            //p = &rrs->rd_data;
-                                            //printf("%X\n", *p);
-                                            fake_ip = inet_addr((const char*)cfg->dns_response);
-                                            //p = (uint8_t*)&fake_ip;
-                                            printf("%02X\n", fake_ip);
-                                            //p = fake_ip;
-                                            memcpy(&rrs->rd_data, &fake_ip, sizeof(unsigned int));
-                                            puts("NEW RESPONSE RRS:");
-                                            for (i = 0; i < sizeof(DNS_RRS); i++){
-                                                printf("%02X", rrs[i]);
-                                            };
-                                            printf("\n");
-                                            
-//                                            printf("TTL: %d\n", ntohl(rrs->ttl));
-//                                            printf("FAKE ADDRESS: %X\n", p->address);
-//                                            memcpy(&rrs->type, &fake, sizeof(struct fake_rrs));
-//                                            puts("NEW RESPONSE DNS RRS:");
-//                                            struct in_addr addr;
-//                                            p = &addr;
-//                                            memcpy(&addr, &rrs->rd_data, 4);
-//            printf("%X", addr);
-                                        }
-					pos += sizeof(DNS_RRS) + ntohs(rrs->rd_length);
+                                            if (an_count > 1)
+                                                hdr->an_count = 256;
+                                                an_count = 1;
+                                            if (cfg->dns_response != NULL) {
+                                                fake_ip = inet_addr((const char*)cfg->dns_response);
+                                                memcpy(&rrs->rd_data, &fake_ip, sizeof(uint32_t));
+                                                rrs->rd_length = htons(sizeof(uint32_t));
+                                            }                                         
+                                            else {
+                                                hdr->an_count = 0x00;
+                                            }
+                                        }                                        
+                                        if(hdr->an_count == 0)
+                                                pos -= 2;
+                                        else
+                                            pos += sizeof(DNS_RRS) + ntohs(rrs->rd_length);
 				}
 			}
 			if(badfmt == 0) {
@@ -308,7 +241,6 @@ static void process_response_udp(REMOTE_DNS *rdns)
 	int size;
 	socklen_t addrlen;
 	struct sockaddr_in source;
-//        puts("process_response started");
 
 	addrlen = sizeof(struct sockaddr_in);
 	size = recvfrom(rdns->sock, rdns->buffer, PACKAGE_SIZE, 0, (struct sockaddr*)&source, &addrlen);
@@ -336,13 +268,11 @@ static int dnsproxy(int remote_tcp)
 	LOCAL_DNS *ldns = &engine->local;
 	REMOTE_DNS *rdns = &engine->remote;
 
-//        puts("dnsproxy started");
 	ldns->sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if(ldns->sock == INVALID_SOCKET) {
 		perror("create socket");
 		return -1;
 	}
-//        puts("local socket created");
         
 	setsockopt(ldns->sock, SOL_SOCKET, SO_REUSEADDR, (char*)&enable, sizeof(enable));
 	memset(&addr, 0, sizeof(addr));
@@ -353,7 +283,6 @@ static int dnsproxy(int remote_tcp)
 		perror("bind service port");
 		return -1;
 	}
-//        puts("local socket binded");
 
 	rdns->tcp = remote_tcp;
 	rdns->sock = INVALID_SOCKET;
@@ -368,7 +297,6 @@ static int dnsproxy(int remote_tcp)
             perror("create socket");
             return -1;
 	}
-//        puts("remote socket created");
 
 	last_clean = time(&current);
 	while(1) {
@@ -387,22 +315,17 @@ static int dnsproxy(int remote_tcp)
 			if(rdns->sock != INVALID_SOCKET
 				&& FD_ISSET(rdns->sock, &readfds)) {
 				process_response_udp(rdns);
-//                                puts("responded");
 			}
 			if(FD_ISSET(ldns->sock, &readfds)){
 				process_query(engine);
-//                                puts("query processed");
                         }                                
 		}
 
 		if(time(&current) - last_clean > CACHE_CLEAN_TIME || fds == 0) {
 			last_clean = current;
 			transport_cache_clean(current);
-//                        puts("transport cache cleaned");
-
 		}
 	}
-//        puts("dnsproxy exited\n");
 
 	return 0;
 }
@@ -420,16 +343,13 @@ int main()
 
 
 	printf( " * running at %d\n"
-		" * transport to %s:%d,%s\n"
+		" * transport to %s:%d, udp\n"
                 " * response address: %s\n"
 		, cfg->proxy_port
 		, cfg->dns_ip
 		, cfg->dns_port
-                , remote_tcp? "tcp": "udp"
-                , cfg->dns_response);
+                , (cfg->dns_response == NULL)? "not specified": cfg->dns_response);
        
-	srand((unsigned int)time(NULL));
-//	domain_cache_init(hosts_file);
 	transport_cache_init(transport_timeout);
 	return dnsproxy(remote_tcp);
 }

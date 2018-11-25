@@ -34,7 +34,7 @@ PRX_SETS* readconfig(char *filename)
     puts("file read");
  
     /* Записываем параметры в структуру Config */
-    config = (char *)malloc(sizeof(PRX_SETS));
+    config = (PRX_SETS *)malloc(sizeof(PRX_SETS));
     setting_p = config_lookup (&cfg, "DNS.Port");
     if (setting_p != NULL) {
     puts("setting_p if");
@@ -67,9 +67,7 @@ PRX_SETS* readconfig(char *filename)
         strcpy ((char *)config->dns_response, string_p);
     }
     else {
-        fprintf (stderr, "%s - %s\n", config_error_file(&cfg), 
-                "wrong DNS response specified");
-        return(NULL);
+        config->dns_response = NULL;
     }
 
     setting_p = config_lookup (&cfg, "Blacklist");

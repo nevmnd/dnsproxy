@@ -14,14 +14,11 @@ set(SOURCE_PATH "${PROJECT_SOURCE_DIR}/src")
 
 set(HEADER_FILES "${SOURCE_PATH}/settings.h"
                  "${SOURCE_PATH}/dnsproxy.h"
-                 "${SOURCE_PATH}/embed/xgetopt.h"
                  "${SOURCE_PATH}/embed/rbtree.h"
                  )
 
 set(SOURCE_FILES "${SOURCE_PATH}/settings.c"
-                 "${SOURCE_PATH}/domain_cache.c"
                  "${SOURCE_PATH}/transport_cache.c"
-                 "${SOURCE_PATH}/embed/xgetopt.c"
                  "${SOURCE_PATH}/embed/rbtree.c"
                  )
 
