@@ -24,3 +24,14 @@ DNS Proxy requires config file to work. Just copy proxy.cfg to directory of the 
 $ cp proxy.cfg build/proxy.cfg
 $ cd build
 $ ./dns_proxy
+```
+You can check its work by typing:
+```
+$ dig -p 5300 google.ru
+but be sure to turn off your local DNS server before that.
+
+## Proxy configuration
+
+Section "DNS" contains options of upstream DNS server (IP and port) and IP of server where proxy should redirect queries. If that address not specified, proxy will answer with empty response.
+Section "Proxy" contains address of local port which it should be run on to.
+List of domains whit proxy should block are defined in section "Blacklist".
