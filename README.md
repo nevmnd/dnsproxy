@@ -29,6 +29,7 @@ You can check its work by typing:
 ```
 $ dig -p 5300 google.ru
 but be sure to turn off your local DNS server before that.
+```
 
 ## Proxy configuration
 
