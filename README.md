@@ -16,3 +16,11 @@ $ ./build.sh
 $ cd build
 $ ./dns_proxy
 ```
+## Usage
+
+DNS Proxy requires config file to work. Just copy proxy.cfg to directory of the executable and run.
+
+```
+$ cp proxy.cfg build/proxy.cfg
+$ cd build
+$ ./dns_proxy
