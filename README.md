@@ -1,8 +1,14 @@
 dnsproxy
 ========
 
-DNS proxy server with blacklist test task, based on DNS Proxy from vietor (https://github.com/vietor/dnsproxy)
+DNS proxy server with blacklist test task, based on DNS Proxy from vietor (https://github.com/vietor/dnsproxy).
 
+## Requirements
+
+Requires libconfig to be installed in system.
+```
+$ sudo apt-get install libconfig-dev
+```
 ## Build & Run
 
 ```bash
@@ -25,7 +31,7 @@ $ cp proxy.cfg build/proxy.cfg
 $ cd build
 $ ./dns_proxy
 ```
-You can check its work by typing:
+You can check its work using dig:
 ```
 $ dig -p 5300 google.ru
 ```
