@@ -11,7 +11,7 @@
  * Created on 11 ноября 2018 г., 19:26
  */
 
-
+/*structure to store configuration*/
 typedef struct {
     const char *dns_ip;
     uint16_t dns_port;
@@ -21,4 +21,5 @@ typedef struct {
     const char **blacklist;
 } PRX_SETS;
 
+/*function to read configuration*/
 PRX_SETS* readconfig(char *filename);

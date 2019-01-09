@@ -13,17 +13,17 @@
 PRX_SETS* readconfig(char *filename)
 {
     
-    PRX_SETS *config;
+    PRX_SETS *config;                                       //structure to store configuration 
     static uint32_t length, i;
     static const char *string_p;
     puts("readconfig started");
-    /* используются типы из libconfig */
+    /* using types from libconfig */
     config_t cfg; 
     config_setting_t *setting_p;
 
     config_init(&cfg);
 
-    /* Читаем файл. Если ошибка, то завершаем работу */
+    /* Reading file. Exit on error */
     if(! config_read_file(&cfg, filename))
     {
         fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg),
@@ -33,7 +33,7 @@ PRX_SETS* readconfig(char *filename)
     }
     puts("file read");
  
-    /* Записываем параметры в структуру Config */
+    /* Writing parameters read to config structure */
     config = (PRX_SETS *)malloc(sizeof(PRX_SETS));
     setting_p = config_lookup (&cfg, "DNS.Port");
     if (setting_p != NULL) {
@@ -46,7 +46,7 @@ PRX_SETS* readconfig(char *filename)
         return(NULL);
     }
     puts("dns port read");
-  
+    
     setting_p = config_lookup (&cfg, "DNS.IP");
     if (setting_p != NULL) {
         string_p = config_setting_get_string (setting_p);
@@ -84,7 +84,7 @@ PRX_SETS* readconfig(char *filename)
         }
     }
     else {
-        fprintf (stderr, "%s - %s\n", config_error_file(&cfg), 
+        fprintf (stderr, "%s - %s\n", config_error_file(&cfg),      //if no blacklist in configuration, it's an error
                 "blacklist not found");
         return(NULL);
     }
@@ -93,12 +93,12 @@ PRX_SETS* readconfig(char *filename)
         config->proxy_port = config_setting_get_int (setting_p);
     }
     else {
-      fprintf (stderr, "%s - %s\n", config_error_file(&cfg), 
+      fprintf (stderr, "%s - %s\n", config_error_file(&cfg),        //if no proxy port in configuration, it's an error
               "wrong proxy port specified");
       return(NULL);
     }
   
-    /* Удаляем структуру libconfig */
+    /* deleting libconfig structure */
     
     config_destroy(&cfg);
     return(config); 

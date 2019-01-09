@@ -65,7 +65,7 @@ typedef struct {
 	unsigned short classes;
 	unsigned int ttl;
 	unsigned short rd_length;
-	char rd_data[0];
+	char *rd_data;
 } DNS_RRS;
 
 #pragma pack(pop)
