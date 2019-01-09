@@ -1,7 +1,7 @@
 dnsproxy
 ========
 
-DNS proxy server with blacklist test task, based on DNS Proxy from vietor (https://github.com/vietor/dnsproxy).
+DNS proxy server with blacklist test task, based on dnsproxy from vietor (https://github.com/vietor/dnsproxy).
 
 ## Requirements
 
