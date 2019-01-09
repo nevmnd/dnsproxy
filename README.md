@@ -35,4 +35,4 @@ but be sure to turn off your local DNS server before that.
 
 Section "DNS" contains options of upstream DNS server (IP and port) and IP of server where proxy should redirect queries. If that address not specified, proxy will answer with empty response.
 Section "Proxy" contains address of local port which it should be run on to.
-List of domains whit proxy should block are defined in section "Blacklist".
+List of domains which proxy should block are defined in section "Blacklist".
