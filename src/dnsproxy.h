@@ -34,7 +34,6 @@
 
 #include "embed/list.h"
 #include "embed/rbtree.h"
-#include "embed/xgetopt.h"
 
 #pragma pack(push,1)
 
